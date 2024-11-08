@@ -1,0 +1,16 @@
+version: "3.8" #docker composerのバージョンの指定
+services:
+  front:
+    build: ./ #buildするdockerfileの位置
+    container_name: hackU_react #作成するdockerコンテナの名前
+    volumes:
+      - .:/app
+      - /app/node_modules
+      # - ./hackU:/hackU #docker内と共有するフォルダの指定
+    # working_dir: /hackU #/docker内に入った時の初期パスの指定
+    ports:
+      - 3000:3000 #コンテナにバインドするポートの指定（左:自分のPCポート、右:dookerコンテナのポート）
+    tty: true #コンテナが勝手に終了しないための設定
+    stdin_open: true #標準入出力とエラー出力をコンテナに結びつける設定
+    environment:
+      - CHOKIDAR_USEPOLLING=true #ホットリロードを行う設定
