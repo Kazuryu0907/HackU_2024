@@ -4,6 +4,8 @@ import viteLogo from '/vite.svg'
 import "./globals.css";
 import './App.css'
 
+import GoogleMap from './GoogleMap.tsx'
+
 function App() {
   const [count, setCount] = useState(0)
   return (
@@ -17,7 +19,7 @@ function App() {
         </a>
       </div>
       <h1>Vite + React</h1>
-      <h2 className='text-red-700'>Hello!</h2>
+      <h2 className='text-blue-700'>Hello!</h2>
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
@@ -29,6 +31,11 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
+      <p>TEST</p>
+
+      <div>
+        <GoogleMap />
+      </div>
     </>
   )
 }
