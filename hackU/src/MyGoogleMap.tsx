@@ -1,0 +1,109 @@
+// src/components/GoogleMap.tsx
+import React, { useEffect, useRef, useState } from 'react';
+import { mapPrefectures } from '@/datas/mapPrefectures'; //都道府県データ
+
+// 初期化用の定数
+const INITIALIZE_LAT  = 35.67981;  // 緯度
+const INITIALIZE_LNG  = 139.73695; // 経度
+const INITIALIZE_ZOOM = 16;        // ズームレベル
+
+const INITIALIZE_MAP_WIDTH  = '100%';  // 地図の幅
+const INITIALIZE_MAP_HEIGHT = '800px'; // 地図の高さ
+
+
+const MyGoogleMap: React.FC = () => {
+    const mapRef                  = useRef<HTMLDivElement>(null);
+    const [map, setMap]           = useState<google.maps.Map | null>(null);
+    const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null); // 緯度経度state
+    const [station, setStation]     = useState<google.maps.places.PlaceResult[]>([]); // 周辺駅state
+    const [startLocation, setStartLocation]           = useState<string | null>(null);
+    const [endLocation, setEndLocation]               = useState<string | null>(null);
+    const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
+    const [distance, setDistance]                     = useState<string | null>(null);  // 距離state
+
+    //初期レンダー後に適用されるエフェクト
+    useEffect(() => {
+        if (!mapRef.current) return;
+
+        const initializedMap  = new google.maps.Map(mapRef.current, {
+            center: { lat: INITIALIZE_LAT, lng: INITIALIZE_LNG },
+            zoom: INITIALIZE_ZOOM,
+        });
+
+        setMap(initializedMap);
+    }, []);
+
+    //mapが更新されたら発動
+    useEffect(() => {
+        if (!map) return;
+
+        // クリックリスナー
+        map.addListener('click', (event: { latLng: { lat: () => any; lng: () => any; }; }) => {
+            // 緯度経度の取得
+            const latitude = event.latLng.lat();
+            const longitude = event.latLng.lng();
+            setLocation({ lat: latitude, lng: longitude });
+
+            // 駅データの取得
+            const service = new google.maps.places.PlacesService(map);
+            service.nearbySearch({
+                location: { lat: latitude, lng: longitude },
+                radius: 3000,  // 検索範囲（メートル）
+                type: 'transit_station'  // 駅を検索 bus_station subway_station train_station
+            }, (results, status) => {
+                if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+                    setStation(results || []);
+                }
+            });
+
+
+            // 最寄り駅の緯度経度を取得
+            var firstPlace = station[0];
+            // 一段階ずつundifineでないことを確認しないとエラーになる
+            if (firstPlace && firstPlace.geometry && firstPlace.geometry.location) {
+                // var station_latitude = firstPlace.geometry.location.lat();
+                // var station_latitude2 = firstPlace['geometry']['location']['lat']();
+                var nearest_station_location = firstPlace.geometry.location;
+
+                console.log("緯度:", nearest_station_location.lat());
+                console.log("経度:", nearest_station_location.lng());
+
+            } else {
+                console.error("場所情報が取得できませんでした");
+            }
+        }); //クリックリスナー終了
+
+    }, [map]); //map更新時のレンダー終了
+
+
+    return (
+        <div>
+            
+            {/** 地図表示 */}
+            <div ref={mapRef} style={{ width: INITIALIZE_MAP_WIDTH, height: INITIALIZE_MAP_HEIGHT }} />
+            
+            {/** 緯度経度表示 */}
+            {location && (
+                <div className="mx-5 my-5">
+                <h2 className="underline text-lg mb-3">Location</h2>
+                <p>Latitude: {location.lat}</p>
+                <p>Longitude: {location.lng}</p>
+                </div>
+            )}
+
+            {/** 店舗リストの表示(追加) */}
+            {station.length > 0 && (
+                <div className="mx-5 mb-5">
+                    <h2 className="underline text-lg mb-3">Nearby Station</h2>
+                    <ul className="list-disc list-inside">
+                        {station.map((station, index) => (
+                            <li key={index}>{station.name}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default MyGoogleMap;
