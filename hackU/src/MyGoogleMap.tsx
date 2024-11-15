@@ -44,6 +44,27 @@ const MyGoogleMap: React.FC = () => {
         setMap(initializedMap);
     }, []);
 
+    const currentLocationOnClick = () => {
+      if(!map) return;
+      if(!latitude || !longitude) return;
+      map.setCenter({ lat: latitude, lng: longitude });
+      const service = new google.maps.places.PlacesService(map);
+      service.nearbySearch(
+        {
+          location: { lat: latitude, lng: longitude },
+          radius: 1000, // 検索範囲（メートル）
+          type: 'transit_station', // 駅を検索
+        },
+        (results, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+            setStation(results || []);
+            // 新しいマーカーを配置
+            updateMarkers(results || []);
+          }
+        }
+      );
+    };
+
     //mapが更新されたら発動
     useEffect(() => {
         if (!map) return;
@@ -294,6 +315,7 @@ const MyGoogleMap: React.FC = () => {
                 <p>経度: {longitude !== null ? longitude : '取得中...'}</p>
               </div>
             )}
+            <button onClick={currentLocationOnClick} style={{marginBottom:"16px"}}>現在地から取得</button>
       
             {/** 地図表示 */}
             <div ref={mapRef} style={{ width: INITIALIZE_MAP_WIDTH, height: INITIALIZE_MAP_HEIGHT }} />
