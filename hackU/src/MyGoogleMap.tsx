@@ -118,7 +118,7 @@ const MyGoogleMap: React.FC = () => {
   }
 
   const getStationTime = async(stationName: string) => {
-    if (stationName === "永田町"){
+    if (stationName === "永田町駅"){
         const res = await fetch("https://api.odpt.org/api/v4/odpt:StationTimetable?acl:consumerKey=qdxr1f16n0hqqbxhpzipz2j8z3ir1agb1iuqx8kubffd3jmta12hnk4343rfey9n&odpt:station=odpt.Station:TokyoMetro.Hanzomon.Nagatacho&odpt:railDirection=odpt.RailDirection:TokyoMetro.Shibuya&odpt:calendar=odpt.Calendar:Weekday",{method:"GET"});
         const data = await res.json();
         const time = getNearTrainTime(getTimeFromTrainTimeTable(data));
@@ -137,7 +137,6 @@ const MyGoogleMap: React.FC = () => {
     stations = getUniqueStation(stations);
 
     const stationTimes = await Promise.all(stations.map(station => getStationTime(station.name || "")));
-    console.log(stationTimes);
 
     // 新しいマーカーを作成
     const newMarkers = stations.map((station,index) => {
