@@ -1,7 +1,8 @@
 // src/components/GoogleMap.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { mapPrefectures } from '@/datas/mapPrefectures'; //都道府県データ
-
+import { useWhatChanged} from "@simbathesailor/use-what-changed"
+import { getTimeFromTrainTimeTable,getNearTrainTime } from "./TrainTimeTable";
 // 初期化用の定数
 const INITIALIZE_LAT  = 35.67981;  // 緯度
 const INITIALIZE_LNG  = 139.73695; // 経度
@@ -26,6 +27,8 @@ const MyGoogleMap: React.FC = () => {
     const [latitude, setLatitude] = useState<number | null>(null);
     const [longitude, setLongitude] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null); // エラーを表示するためのステート
+
+    useWhatChanged([markers]);
 
 
 
@@ -114,19 +117,35 @@ const MyGoogleMap: React.FC = () => {
     );
   }
 
+  const getStationTime = async(stationName: string) => {
+    if (stationName === "永田町"){
+        const res = await fetch("https://api.odpt.org/api/v4/odpt:StationTimetable?acl:consumerKey=qdxr1f16n0hqqbxhpzipz2j8z3ir1agb1iuqx8kubffd3jmta12hnk4343rfey9n&odpt:station=odpt.Station:TokyoMetro.Hanzomon.Nagatacho&odpt:railDirection=odpt.RailDirection:TokyoMetro.Shibuya&odpt:calendar=odpt.Calendar:Weekday",{method:"GET"});
+        const data = await res.json();
+        const time = getNearTrainTime(getTimeFromTrainTimeTable(data));
+        console.log(time);
+        return time
+    }else{
+        return "未定";
+    }
+  }
   // マーカーを地図に更新する関数
-  const updateMarkers = (stations: google.maps.places.PlaceResult[]) => {
+  const updateMarkers = async(stations: google.maps.places.PlaceResult[]) => {
     // 古いマーカーを削除
-    markers.forEach(marker => {console.log(marker);marker.setMap(null)});
+    console.log(markers);
+    markers.forEach(marker => {marker.setMap(null)});
+    // 重複削除
     stations = getUniqueStation(stations);
+
+    const stationTimes = await Promise.all(stations.map(station => getStationTime(station.name || "")));
+    console.log(stationTimes);
+
     // 新しいマーカーを作成
-    const newMarkers = stations.map(station => {
+    const newMarkers = stations.map((station,index) => {
       const stationName = station.name || "不明";
       const padding = 10; // パディング
       const fontSize = 14; // フォントサイズ
       const textWidth = stationName.length * fontSize * 1.0; // 文字数に基づく幅計算（簡易的に文字幅を推定）
       const rectWidth = textWidth + padding * 2; // 背景矩形の幅（文字の幅 + パディング）
-
       const marker = new google.maps.Marker({
         position: {
           lat: station.geometry?.location.lat() || 0,
@@ -136,17 +155,20 @@ const MyGoogleMap: React.FC = () => {
         title: station.name,
         icon: {
         url: "data:image/svg+xml;charset=UTF-8," + 
-        "<svg xmlns='http://www.w3.org/2000/svg' width='" + rectWidth + "' height='60'>" + 
+        "<svg xmlns='http://www.w3.org/2000/svg' width='" + rectWidth + "' height='80'>" + 
           // 吹き出しの四角い部分
-          "<rect x='0' y='0' width='" + rectWidth + "' height='40' rx='8' ry='8' fill='white'/>" + 
+          "<rect x='0' y='0' width='" + rectWidth + "' height='60' rx='8' ry='8' fill='white'/>" + 
           // 吹き出しの尾（三角形）
-          "<polygon points='" + (rectWidth / 2 - 10) + ",40 " + (rectWidth / 2 + 10) + ",40 " + (rectWidth / 2) + ",50' fill='white'/>" +
+          "<polygon points='" + (rectWidth / 2 - 10) + ",60 " + (rectWidth / 2 + 10) + ",60 " + (rectWidth / 2) + ",70' fill='white'/>" +
           // テキスト
           "<text x='" + padding + "' y='25' font-size='" + fontSize + "' fill='black'>" + 
-            encodeURIComponent(stationName) + 
+            encodeURIComponent(`${stationName}`) +
+          "</text>" + 
+          "<text x='" + padding + "' y='50' font-size='" + fontSize + "' fill='black'>" + 
+            encodeURIComponent(`${stationTimes[index]}`) +
           "</text>" + 
         "</svg>",
-        scaledSize: new google.maps.Size(rectWidth, 50), // アイコンサイズ
+        scaledSize: new google.maps.Size(rectWidth, 80), // アイコンサイズ
       },
       });
 
