@@ -7,8 +7,8 @@ export const getTimeFromTrainTimeTable = (trainTimeTable: String[]) => {
     return timetables.map((t) => t["odpt:departureTime"]);
 }
 
-export const getNearTrainTime = (times: String[]) => {
-    const valid_times:String[] = [];
+export const getNearTrainTime = (times: string[]) => {
+    const valid_times:string[] = [];
     const now = new Date();
     const h_now = now.getHours();
     const m_now = now.getMinutes();
