@@ -10,6 +10,7 @@ const INITIALIZE_ZOOM = 16;        // ズームレベル
 const INITIALIZE_MAP_WIDTH  = '100%';  // 地図の幅
 const INITIALIZE_MAP_HEIGHT = '800px'; // 地図の高さ
 
+let myLocation;
 
 const MyGoogleMap: React.FC = () => {
     const mapRef                  = useRef<HTMLDivElement>(null);
@@ -20,6 +21,9 @@ const MyGoogleMap: React.FC = () => {
     const [endLocation, setEndLocation]               = useState<string | null>(null);
     const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
     const [distance, setDistance]                     = useState<string | null>(null);  // 距離state
+    const mapContainerRef = useRef<HTMLDivElement | null>(null);
+    const [markers, setMarkers] = useState<google.maps.Marker[]>([]); // マーカー管理用
+
 
     //初期レンダー後に適用されるエフェクト
     useEffect(() => {
@@ -37,7 +41,7 @@ const MyGoogleMap: React.FC = () => {
     useEffect(() => {
         if (!map) return;
 
-        // クリックリスナー
+        /*// クリックリスナー
         map.addListener('click', (event: { latLng: { lat: () => any; lng: () => any; }; }) => {
             // 緯度経度の取得
             const latitude = event.latLng.lat();
@@ -67,18 +71,70 @@ const MyGoogleMap: React.FC = () => {
 
                 console.log("緯度:", nearest_station_location.lat());
                 console.log("経度:", nearest_station_location.lng());
-
+                
             } else {
                 console.error("場所情報が取得できませんでした");
             }
         }); //クリックリスナー終了
+        */
 
-    }, [map]); //map更新時のレンダー終了
+        // クリックリスナーの登録
+    map.addListener('click', (event: { latLng: { lat: () => any; lng: () => any; }; }) => {
+      const latitude = event.latLng.lat();
+      const longitude = event.latLng.lng();
+      setLocation({ lat: latitude, lng: longitude });
+
+      // 駅データの取得（バス停や駅）
+      const service = new google.maps.places.PlacesService(map);
+      service.nearbySearch(
+        {
+          location: { lat: latitude, lng: longitude },
+          radius: 3000, // 検索範囲（メートル）
+          type: 'transit_station', // 駅を検索
+        },
+        (results, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+            setStation(results || []);
+            // 新しいマーカーを配置
+            updateMarkers(results || []);
+          }
+        }
+      );
+    });
+  }, [map]);
+
+  // マーカーを地図に更新する関数
+  const updateMarkers = (stations: google.maps.places.PlaceResult[]) => {
+    // 古いマーカーを削除
+    markers.forEach(marker => marker.setMap(null));
+
+    // 新しいマーカーを作成
+    const newMarkers = stations.map(station => {
+      const marker = new google.maps.Marker({
+        position: {
+          lat: station.geometry?.location.lat() || 0,
+          lng: station.geometry?.location.lng() || 0,
+        },
+        map,
+        title: station.name,
+      });
+
+      return marker;
+    });
+
+    // 新しいマーカーを状態に保存
+    setMarkers(newMarkers);
+  };
 
 
     return (
         <div>
             
+            {/** ヘッダー */}
+            <div className='header'>
+            <p className="clicked_station">station name</p>
+            </div>
+      
             {/** 地図表示 */}
             <div ref={mapRef} style={{ width: INITIALIZE_MAP_WIDTH, height: INITIALIZE_MAP_HEIGHT }} />
             
