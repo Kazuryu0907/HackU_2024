@@ -5,6 +5,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 
 import MyGoogleMap from './MyGoogleMap.tsx'
+import TrainTimeTable from './TrainTimeTable.tsx'
 
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
       {/* <p>Google Maps with Next.js and TypeScript</p> */}
       <div className='wh-full'>
         <MyGoogleMap />
+        <TrainTimeTable/>
       </div>
       
     </>
