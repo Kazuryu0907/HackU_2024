@@ -89,7 +89,7 @@ const MyGoogleMap: React.FC = () => {
       service.nearbySearch(
         {
           location: { lat: latitude, lng: longitude },
-          radius: 3000, // 検索範囲（メートル）
+          radius: 1000, // 検索範囲（メートル）
           type: 'transit_station', // 駅を検索
         },
         (results, status) => {
@@ -110,6 +110,12 @@ const MyGoogleMap: React.FC = () => {
 
     // 新しいマーカーを作成
     const newMarkers = stations.map(station => {
+      const stationName = station.name || "不明";
+      const padding = 10; // パディング
+      const fontSize = 14; // フォントサイズ
+      const textWidth = stationName.length * fontSize * 1.0; // 文字数に基づく幅計算（簡易的に文字幅を推定）
+      const rectWidth = textWidth + padding * 2; // 背景矩形の幅（文字の幅 + パディング）
+
       const marker = new google.maps.Marker({
         position: {
           lat: station.geometry?.location.lat() || 0,
@@ -117,6 +123,10 @@ const MyGoogleMap: React.FC = () => {
         },
         map,
         title: station.name,
+        icon: {
+        url: "data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='" + rectWidth + "' height='50'>" + "<rect x='0' y='0' width='" + rectWidth + "' height='40' fill='white'/>" + "<text x='" + (padding) + "' y='20' font-size='" + fontSize + "' fill='black'>"+ encodeURIComponent(stationName) + "</text></svg>",
+        scaledSize: new google.maps.Size(rectWidth, 50), // アイコンサイズ
+      },
       });
 
       return marker;
