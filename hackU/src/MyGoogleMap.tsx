@@ -1,7 +1,6 @@
 // src/components/GoogleMap.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { mapPrefectures } from '@/datas/mapPrefectures'; //都道府県データ
-import axios from 'axios';
 
 // 初期化用の定数
 const INITIALIZE_LAT  = 35.67981;  // 緯度
@@ -108,11 +107,18 @@ const MyGoogleMap: React.FC = () => {
     });
   }, [map]);
 
+
+  const getUniqueStation = (stations: google.maps.places.PlaceResult[]) => {
+    return stations.filter(
+      (ele,index,self) => self.findIndex(e => e.name === ele.name) === index
+    );
+  }
+
   // マーカーを地図に更新する関数
   const updateMarkers = (stations: google.maps.places.PlaceResult[]) => {
     // 古いマーカーを削除
-    markers.forEach(marker => marker.setMap(null));
-
+    markers.forEach(marker => {console.log(marker);marker.setMap(null)});
+    stations = getUniqueStation(stations);
     // 新しいマーカーを作成
     const newMarkers = stations.map(station => {
       const stationName = station.name || "不明";
