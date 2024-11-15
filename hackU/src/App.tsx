@@ -5,7 +5,6 @@ import viteLogo from '/vite.svg'
 import './App.css'
 
 import MyGoogleMap from './MyGoogleMap.tsx'
-import displayBus from './displayBus.tsx'
 
 
 function App() {

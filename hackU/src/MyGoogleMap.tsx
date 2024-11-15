@@ -1,6 +1,7 @@
 // src/components/GoogleMap.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { mapPrefectures } from '@/datas/mapPrefectures'; //都道府県データ
+import axios from 'axios';
 
 // 初期化用の定数
 const INITIALIZE_LAT  = 35.67981;  // 緯度
@@ -9,8 +10,6 @@ const INITIALIZE_ZOOM = 16;        // ズームレベル
 
 const INITIALIZE_MAP_WIDTH  = '100%';  // 地図の幅
 const INITIALIZE_MAP_HEIGHT = '800px'; // 地図の高さ
-
-let myLocation;
 
 const MyGoogleMap: React.FC = () => {
     const mapRef                  = useRef<HTMLDivElement>(null);
@@ -23,6 +22,12 @@ const MyGoogleMap: React.FC = () => {
     const [distance, setDistance]                     = useState<string | null>(null);  // 距離state
     const mapContainerRef = useRef<HTMLDivElement | null>(null);
     const [markers, setMarkers] = useState<google.maps.Marker[]>([]); // マーカー管理用
+    const [currentTime, setCurrentTime] = useState<string>('');　//現在時刻
+    const [currentPosition, setCurrentPosition] = useState<google.maps.LatLng | null>(null);
+    const [latitude, setLatitude] = useState<number | null>(null);
+    const [longitude, setLongitude] = useState<number | null>(null);
+    const [error, setError] = useState<string | null>(null); // エラーを表示するためのステート
+
 
 
     //初期レンダー後に適用されるエフェクト
@@ -124,7 +129,17 @@ const MyGoogleMap: React.FC = () => {
         map,
         title: station.name,
         icon: {
-        url: "data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='" + rectWidth + "' height='50'>" + "<rect x='0' y='0' width='" + rectWidth + "' height='40' fill='white'/>" + "<text x='" + (padding) + "' y='20' font-size='" + fontSize + "' fill='black'>"+ encodeURIComponent(stationName) + "</text></svg>",
+        url: "data:image/svg+xml;charset=UTF-8," + 
+        "<svg xmlns='http://www.w3.org/2000/svg' width='" + rectWidth + "' height='60'>" + 
+          // 吹き出しの四角い部分
+          "<rect x='0' y='0' width='" + rectWidth + "' height='40' rx='8' ry='8' fill='white'/>" + 
+          // 吹き出しの尾（三角形）
+          "<polygon points='" + (rectWidth / 2 - 10) + ",40 " + (rectWidth / 2 + 10) + ",40 " + (rectWidth / 2) + ",50' fill='white'/>" +
+          // テキスト
+          "<text x='" + padding + "' y='25' font-size='" + fontSize + "' fill='black'>" + 
+            encodeURIComponent(stationName) + 
+          "</text>" + 
+        "</svg>",
         scaledSize: new google.maps.Size(rectWidth, 50), // アイコンサイズ
       },
       });
@@ -136,14 +151,55 @@ const MyGoogleMap: React.FC = () => {
     setMarkers(newMarkers);
   };
 
+  // 現在時刻を定期的に更新
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString()); // 現在時刻を更新
+    }, 1000); // 1秒ごとに更新
+
+    return () => clearInterval(interval); // コンポーネントがアンマウントされる時にインターバルをクリア
+  }, []);
+
+  // useEffectを使ってコンポーネントがマウントされたときに現在地を取得
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setLatitude(latitude); // 緯度をステートに保存
+          setLongitude(longitude); // 経度をステートに保存
+        },
+        (err) => {
+          setError('位置情報の取得に失敗しました。エラーコード: ' + err.code); // エラーハンドリング
+        }
+      );
+    } else {
+      setError('このブラウザはGeolocation APIをサポートしていません。');
+    }
+  }, []); // 空の依存配列で、最初の1回だけ実行
 
     return (
         <div>
-            
             {/** ヘッダー */}
-            <div className='header'>
+            
+            {/* <div className='header'>
             <p className="clicked_station">station name</p>
+            </div> */}
+
+            <div className="time">
+            <p>現在時刻: {currentTime}</p>
             </div>
+
+            <p>現在地情報</p>
+            {error ? (
+              <p style={{ color: 'red' }}>{error}</p> // エラーがあれば表示
+            ) : (
+              <div>
+                <p>緯度: {latitude !== null ? latitude : '取得中...'}</p>
+                <p>経度: {longitude !== null ? longitude : '取得中...'}</p>
+              </div>
+            )}
       
             {/** 地図表示 */}
             <div ref={mapRef} style={{ width: INITIALIZE_MAP_WIDTH, height: INITIALIZE_MAP_HEIGHT }} />
@@ -169,6 +225,8 @@ const MyGoogleMap: React.FC = () => {
                 </div>
             )}
         </div>
+
+        
     );
 };
 
