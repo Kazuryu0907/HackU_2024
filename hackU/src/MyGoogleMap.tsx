@@ -60,6 +60,12 @@ const MyGoogleMap: React.FC = () => {
             setStation(results || []);
             // 新しいマーカーを配置
             updateMarkers(results || []);
+              new google.maps.Marker({
+              position: { lat: latitude, lng: longitude },
+              map,
+              title: '現在地',
+              zIndex: 100,
+            });
           }
         }
       );
@@ -125,6 +131,13 @@ const MyGoogleMap: React.FC = () => {
             setStation(results || []);
             // 新しいマーカーを配置
             updateMarkers(results || []);
+
+            new google.maps.Marker({
+              position: { lat: latitude, lng: longitude },
+              map,
+              title: '現在地',
+              zIndex: 100,
+            });
           }
         }
       );
@@ -146,7 +159,6 @@ const MyGoogleMap: React.FC = () => {
     const res = await fetch(url,{method:"GET"});
     const data = await res.json();
     if(data.length === 0)return {"railway":undefined,"station_code":""};
-    console.log(data[0])
     const railway = data[0]["owl:sameAs"];
     const station_code = data[0]["odpt:stationCode"].slice(0,1);
     return {"railway":railway,"station_code":station_code};
@@ -186,17 +198,18 @@ const MyGoogleMap: React.FC = () => {
     return initializedMap;
   }
 
-  const no_time_url = (stationName: string) => {
+  const no_time_url = (stationName: string, isStation:boolean) => {
     const padding = 10; // パディング
     const fontSize = 14; // フォントサイズ
     const textWidth = stationName.length * fontSize * 1.0; // 文字数に基づく幅計算（簡易的に文字幅を推定）
     const rectWidth = textWidth + padding * 2; // 背景矩形の幅（文字の幅 + パディング）
+    const color = !isStation ? "Turquoise" : "tomato";
     const url = "data:image/svg+xml;charset=UTF-8," + 
         "<svg xmlns='http://www.w3.org/2000/svg' width='" + rectWidth + "' height='60'>" + 
           // 吹き出しの四角い部分
-          "<rect x='0' y='0' width='" + rectWidth + "' height='40' rx='8' ry='8' fill='Turquoise'/>" + 
+          "<rect x='0' y='0' width='" + rectWidth + `' height='40' rx='8' ry='8' fill='${color}'/>` + 
           // 吹き出しの尾（三角形）
-          "<polygon points='" + (rectWidth / 2 - 10) + ",40 " + (rectWidth / 2 + 10) + ",40 " + (rectWidth / 2) + ",50' fill='Turquoise'/>" +
+          "<polygon points='" + (rectWidth / 2 - 10) + ",40 " + (rectWidth / 2 + 10) + ",40 " + (rectWidth / 2) + `,50' fill='${color}'/>` +
           // テキスト
           "<text x='" + padding + "' y='25' font-size='" + fontSize + "' fill='black'>" + 
             encodeURIComponent(stationName) + 
@@ -264,11 +277,11 @@ const MyGoogleMap: React.FC = () => {
       const padding = 10; // パディング
       const fontSize = 14; // フォントサイズ
       const subText = code2LineName(stationCodeInfo.get(stationName) || "") +" "+ stationTimesInfo.get(stationName) || "";
-      const textLength = station.name?.includes("駅") ? Math.max(stationName.length,subText.length) - 3 : stationName.length;
+      const textLength = stationTimesInfo.has(station.name||"") ? Math.max(stationName.length,subText.length) - 3 : stationName.length;
       const textWidth = textLength * fontSize * 1.0; // 文字数に基づく幅計算（簡易的に文字幅を推定）
       const rectWidth = textWidth + padding * 2; // 背景矩形の幅（文字の幅 + パディング）
 
-      const url = !stationTimesInfo.has(stationName) ? no_time_url(stationName) : time_url(stationName,stationTimesInfo.get(stationName) || "", stationCodeInfo.get(stationName)||"",textLength);
+      const url = !stationTimesInfo.has(stationName) ? no_time_url(stationName,stationName.includes("駅")) : time_url(stationName,stationTimesInfo.get(stationName) || "", stationCodeInfo.get(stationName)||"",textLength);
       const scaledSize = !stationTimesInfo.has(stationName) ? new google.maps.Size(rectWidth, 60) : new google.maps.Size(rectWidth, 80);
     //   const marker = new google.maps.marker.AdvancedMarkerElement({
     //     map: map,
@@ -287,10 +300,12 @@ const MyGoogleMap: React.FC = () => {
           lng: station.geometry?.location.lng() || 0,
         },
         map,
+        zIndex: 10,
         title: station.name,
         icon: {
         url: url,
         scaledSize: scaledSize, // アイコンサイズ
+        
       },
       });
 
