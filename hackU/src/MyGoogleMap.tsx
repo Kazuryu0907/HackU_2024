@@ -60,6 +60,12 @@ const MyGoogleMap: React.FC = () => {
             setStation(results || []);
             // 新しいマーカーを配置
             updateMarkers(results || []);
+              new google.maps.Marker({
+              position: { lat: latitude, lng: longitude },
+              map,
+              title: '現在地',
+              zIndex: 100,
+            });
           }
         }
       );
