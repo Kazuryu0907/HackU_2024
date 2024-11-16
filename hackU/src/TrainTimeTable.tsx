@@ -15,7 +15,7 @@ export const getNearTrainTime = (times: string[]) => {
     const plus_15 = new Date(now.getTime() + 15*60*1000);
     const h_plus_15 = plus_15.getHours();
     const m_plus_15 = plus_15.getMinutes();
-    console.log(h_now,m_now);
+    // console.log(h_now,m_now);
     times.forEach(t => {
         const h = parseInt(t.split(":")[0]);
         const m = parseInt(t.split(":")[1]);
@@ -34,7 +34,7 @@ export const getNearTrainTime = (times: string[]) => {
     //     const time = new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m);
     //     if(time > now)valid_times.push(time);
     // });
-    console.log(valid_times.slice(-1)[0]);
+    // console.log(valid_times.slice(-1)[0]);
     return valid_times.slice(-1)[0];
 }
 

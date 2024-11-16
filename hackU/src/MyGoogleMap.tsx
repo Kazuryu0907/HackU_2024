@@ -1,8 +1,8 @@
 // src/components/GoogleMap.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { mapPrefectures } from '@/datas/mapPrefectures'; //都道府県データ
-import { useWhatChanged} from "@simbathesailor/use-what-changed"
 import { getTimeFromTrainTimeTable,getNearTrainTime } from "./TrainTimeTable";
+import {MarkerF} from "@react-google-maps/api";
 // 初期化用の定数
 const INITIALIZE_LAT  = 35.67981;  // 緯度
 const INITIALIZE_LNG  = 139.73695; // 経度
@@ -28,7 +28,6 @@ const MyGoogleMap: React.FC = () => {
     const [longitude, setLongitude] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null); // エラーを表示するためのステート
 
-    useWhatChanged([markers]);
 
 
 
@@ -39,6 +38,7 @@ const MyGoogleMap: React.FC = () => {
         const initializedMap  = new google.maps.Map(mapRef.current, {
             center: { lat: INITIALIZE_LAT, lng: INITIALIZE_LNG },
             zoom: INITIALIZE_ZOOM,
+            mapId: "DEMO_MAP_ID"
         });
 
         setMap(initializedMap);
@@ -141,24 +141,15 @@ const MyGoogleMap: React.FC = () => {
   const getStatons = (stations: google.maps.places.PlaceResult[]) => {
     return stations.filter(s => s.name?.includes("駅")).map(s => s.name).filter(s => s !== undefined);
   }
-  const fetchStation = async(stationName: string):Promise<string|undefined> =>{
+  const fetchStation = async(stationName: string):Promise<{railway:string|undefined,station_code:string}> =>{
     const url = `https://api.odpt.org/api/v4/odpt:Station?acl:consumerKey=qdxr1f16n0hqqbxhpzipz2j8z3ir1agb1iuqx8kubffd3jmta12hnk4343rfey9n&dc:title=${stationName.replace("駅","")}`;
     const res = await fetch(url,{method:"GET"});
     const data = await res.json();
-    if(data.length === 0)return undefined;
+    if(data.length === 0)return {"railway":undefined,"station_code":""};
+    console.log(data[0])
     const railway = data[0]["owl:sameAs"];
-    return railway;
-  }
-  const getStationTime = async(stationName: string) => {
-    if (stationName === "永田町駅"){
-        const res = await fetch("https://api.odpt.org/api/v4/odpt:StationTimetable?acl:consumerKey=qdxr1f16n0hqqbxhpzipz2j8z3ir1agb1iuqx8kubffd3jmta12hnk4343rfey9n&odpt:station=odpt.Station:TokyoMetro.Hanzomon.Nagatacho&odpt:railDirection=odpt.RailDirection:TokyoMetro.Shibuya&odpt:calendar=odpt.Calendar:Weekday",{method:"GET"});
-        const data = await res.json();
-        const time = getNearTrainTime(getTimeFromTrainTimeTable(data));
-        console.log(time);
-        return time
-    }else{
-        return undefined;
-    }
+    const station_code = data[0]["odpt:stationCode"].slice(0,1);
+    return {"railway":railway,"station_code":station_code};
   }
 
   const getStationTime2 = async(stationRailway: string) => {
@@ -166,10 +157,21 @@ const MyGoogleMap: React.FC = () => {
     const res = await fetch(url,{method:"GET"});
     const data = await res.json();
     const time = getNearTrainTime(getTimeFromTrainTimeTable(data));
-    console.log(time)
+    // console.log(time)
     return time;
   }
 
+  const resetMap = () => {
+    if(!mapRef.current)return;
+    const initializedMap  = new google.maps.Map(mapRef.current, {
+      center: { lat: INITIALIZE_LAT, lng: INITIALIZE_LNG },
+      zoom: INITIALIZE_ZOOM,
+      mapId: "DEMO_MAP_ID"
+    });
+
+    // setMap(initializedMap);
+    return initializedMap;
+  }
 
   const no_time_url = (stationName: string) => {
     const padding = 10; // パディング
@@ -190,7 +192,7 @@ const MyGoogleMap: React.FC = () => {
       return url;
   }
 
-  const time_url = (stationName: string, time: string) => {
+  const time_url = (stationName: string, time: string, stationCode:string) => {
     const padding = 10; // パディング
     const fontSize = 14; // フォントサイズ
     const textWidth = stationName.length * fontSize * 1.0; // 文字数に基づく幅計算（簡易的に文字幅を推定）
@@ -206,30 +208,37 @@ const MyGoogleMap: React.FC = () => {
             encodeURIComponent(`${stationName}`) +
           "</text>" + 
           "<text x='" + padding + "' y='50' font-size='" + fontSize + "' fill='black'>" + 
-            encodeURIComponent(`${time}`) +
+            encodeURIComponent(`${stationCode} ${time}`) +
           "</text>" + 
         "</svg>";
     return url;
   }
   // マーカーを地図に更新する関数
+
   const updateMarkers = async(stations: google.maps.places.PlaceResult[]) => {
     // 古いマーカーを削除
     console.log(markers);
-    markers.forEach(marker => {marker.setMap(null)});
+    markers.forEach(marker => {marker.setMap(null);marker.setOpacity(0)});
     // 重複削除
     stations = getUniqueBus(stations);
     console.log(getStatons(stations));
-    const railways = await Promise.all(getStatons(stations).map(station => fetchStation(station || "")));
+    const stationInfo = await Promise.all(getStatons(stations).map(station => fetchStation(station || "")));
+    const railways = stationInfo.map(s => s.railway);
+    const stationCodes = stationInfo.map(s => s.station_code);
+
     const stationRailwayInfo = new Map<string,string|undefined>();
     getStatons(stations).forEach((station,index) => {
       stationRailwayInfo.set(station,railways[index]);
     });
     const stationTimes = await Promise.all(Array.from(stationRailwayInfo.values()).map(r => r !== undefined ? getStationTime2(r) : undefined));
-    const stationTimesInfo = new Map<string,string|undefined>();
+    const stationTimesInfo = new Map<string,string>();
+    const stationCodeInfo = new Map<string,string>();
     Array.from(stationRailwayInfo.keys()).forEach((s,index) => {
       if(stationTimes[index] !== undefined)stationTimesInfo.set(s,stationTimes[index]);
+      if(stationCodes[index] !== "")stationCodeInfo.set(s,stationCodes[index]);
     });
     console.log(stationTimesInfo);
+    console.log(stationCodeInfo);
     // const stationTimes = await Promise.all(railways.filter(r => r.railway != undefined).map(railway => getStationTime2(railway.railway)));
     // console.log(stationTimes);
     // const railway = await fetchStation(getStatons(stations)[0] as string)
@@ -237,15 +246,26 @@ const MyGoogleMap: React.FC = () => {
     // const stationTimes = await Promise.all(stations.map(station => getStationTime(station.name || "")));
 
     // 新しいマーカーを作成
-    const newMarkers = stations.map((station,index) => {
+    const newMarkers = stations.map((station) => {
       const stationName = station.name || "不明";
       const padding = 10; // パディング
       const fontSize = 14; // フォントサイズ
       const textWidth = stationName.length * fontSize * 1.0; // 文字数に基づく幅計算（簡易的に文字幅を推定）
       const rectWidth = textWidth + padding * 2; // 背景矩形の幅（文字の幅 + パディング）
 
-      const url = !stationTimesInfo.has(stationName) ? no_time_url(stationName) : time_url(stationName,stationTimesInfo.get(stationName) || "");
+      const url = !stationTimesInfo.has(stationName) ? no_time_url(stationName) : time_url(stationName,stationTimesInfo.get(stationName) || "", stationCodeInfo.get(stationName)||"");
       const scaledSize = !stationTimesInfo.has(stationName) ? new google.maps.Size(rectWidth, 60) : new google.maps.Size(rectWidth, 80);
+    //   const marker = new google.maps.marker.AdvancedMarkerElement({
+    //     map: map,
+    //     position: {
+    //       lat: station.geometry?.location.lat() || 0,
+    //       lng: station.geometry?.location.lng() || 0,
+    //     },
+    //     title: station.name,
+    //     content: img,
+    //   });
+    //   return marker;
+    // });
       const marker = new google.maps.Marker({
         position: {
           lat: station.geometry?.location.lat() || 0,
@@ -293,7 +313,6 @@ const MyGoogleMap: React.FC = () => {
       setError('このブラウザはGeolocation APIをサポートしていません。');
     }
   }, []); // 空の依存配列で、最初の1回だけ実行
-
     return (
         <div>
             {/** ヘッダー */}
@@ -305,7 +324,6 @@ const MyGoogleMap: React.FC = () => {
             <div className="time">
             <p>現在時刻: {currentTime}</p>
             </div>
-
             <p>現在地情報</p>
             {error ? (
               <p style={{ color: 'red' }}>{error}</p> // エラーがあれば表示
