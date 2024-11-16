@@ -125,6 +125,13 @@ const MyGoogleMap: React.FC = () => {
             setStation(results || []);
             // 新しいマーカーを配置
             updateMarkers(results || []);
+
+            new google.maps.Marker({
+              position: { lat: latitude, lng: longitude },
+              map,
+              title: '現在地',
+              zIndex: 100,
+            });
           }
         }
       );
@@ -146,7 +153,6 @@ const MyGoogleMap: React.FC = () => {
     const res = await fetch(url,{method:"GET"});
     const data = await res.json();
     if(data.length === 0)return {"railway":undefined,"station_code":""};
-    console.log(data[0])
     const railway = data[0]["owl:sameAs"];
     const station_code = data[0]["odpt:stationCode"].slice(0,1);
     return {"railway":railway,"station_code":station_code};
@@ -287,10 +293,12 @@ const MyGoogleMap: React.FC = () => {
           lng: station.geometry?.location.lng() || 0,
         },
         map,
+        zIndex: 10,
         title: station.name,
         icon: {
         url: url,
         scaledSize: scaledSize, // アイコンサイズ
+        
       },
       });
 
