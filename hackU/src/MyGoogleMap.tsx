@@ -179,9 +179,9 @@ const MyGoogleMap: React.FC = () => {
     const url = "data:image/svg+xml;charset=UTF-8," + 
         "<svg xmlns='http://www.w3.org/2000/svg' width='" + rectWidth + "' height='60'>" + 
           // 吹き出しの四角い部分
-          "<rect x='0' y='0' width='" + rectWidth + "' height='40' rx='8' ry='8' fill='white'/>" + 
+          "<rect x='0' y='0' width='" + rectWidth + "' height='40' rx='8' ry='8' fill='Turquoise'/>" + 
           // 吹き出しの尾（三角形）
-          "<polygon points='" + (rectWidth / 2 - 10) + ",40 " + (rectWidth / 2 + 10) + ",40 " + (rectWidth / 2) + ",50' fill='white'/>" +
+          "<polygon points='" + (rectWidth / 2 - 10) + ",40 " + (rectWidth / 2 + 10) + ",40 " + (rectWidth / 2) + ",50' fill='Turquoise'/>" +
           // テキスト
           "<text x='" + padding + "' y='25' font-size='" + fontSize + "' fill='black'>" + 
             encodeURIComponent(stationName) + 
@@ -198,9 +198,9 @@ const MyGoogleMap: React.FC = () => {
     const url = "data:image/svg+xml;charset=UTF-8," + 
         "<svg xmlns='http://www.w3.org/2000/svg' width='" + rectWidth + "' height='80'>" + 
           // 吹き出しの四角い部分
-          "<rect x='0' y='0' width='" + rectWidth + "' height='60' rx='8' ry='8' fill='white'/>" + 
+          "<rect x='0' y='0' width='" + rectWidth + "' height='60' rx='8' ry='8' fill='tomato'/>" + 
           // 吹き出しの尾（三角形）
-          "<polygon points='" + (rectWidth / 2 - 10) + ",60 " + (rectWidth / 2 + 10) + ",60 " + (rectWidth / 2) + ",70' fill='white'/>" +
+          "<polygon points='" + (rectWidth / 2 - 10) + ",60 " + (rectWidth / 2 + 10) + ",60 " + (rectWidth / 2) + ",70' fill='tomato'/>" +
           // テキスト
           "<text x='" + padding + "' y='25' font-size='" + fontSize + "' fill='black'>" + 
             encodeURIComponent(`${stationName}`) +
