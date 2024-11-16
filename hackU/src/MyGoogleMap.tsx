@@ -161,6 +161,19 @@ const MyGoogleMap: React.FC = () => {
     return time;
   }
 
+  const code2LineName = (station_code:string) => {
+    const table = {
+    'G': '銀座線',
+    'M': '丸ノ内線',
+    'H': '日比谷線',
+    'T': '東西線',
+    'C': '千代田線',
+    'Y': '有楽町線',
+    'N': '南北線',
+    'F': '副都心線',
+    'Z': '半蔵門線'};
+    return table[station_code];
+};
   const resetMap = () => {
     if(!mapRef.current)return;
     const initializedMap  = new google.maps.Map(mapRef.current, {
@@ -192,10 +205,10 @@ const MyGoogleMap: React.FC = () => {
       return url;
   }
 
-  const time_url = (stationName: string, time: string, stationCode:string) => {
+  const time_url = (stationName: string, time: string, stationCode:string,textLength:number) => {
     const padding = 10; // パディング
     const fontSize = 14; // フォントサイズ
-    const textWidth = stationName.length * fontSize * 1.0; // 文字数に基づく幅計算（簡易的に文字幅を推定）
+    const textWidth = (textLength) * fontSize * 1.0; // 文字数に基づく幅計算（簡易的に文字幅を推定）
     const rectWidth = textWidth + padding * 2; // 背景矩形の幅（文字の幅 + パディング）
     const url = "data:image/svg+xml;charset=UTF-8," + 
         "<svg xmlns='http://www.w3.org/2000/svg' width='" + rectWidth + "' height='80'>" + 
@@ -208,7 +221,7 @@ const MyGoogleMap: React.FC = () => {
             encodeURIComponent(`${stationName}`) +
           "</text>" + 
           "<text x='" + padding + "' y='50' font-size='" + fontSize + "' fill='black'>" + 
-            encodeURIComponent(`${stationCode} ${time}`) +
+            encodeURIComponent(`${code2LineName(stationCode)} ${time}`) +
           "</text>" + 
         "</svg>";
     return url;
@@ -250,10 +263,12 @@ const MyGoogleMap: React.FC = () => {
       const stationName = station.name || "不明";
       const padding = 10; // パディング
       const fontSize = 14; // フォントサイズ
-      const textWidth = stationName.length * fontSize * 1.0; // 文字数に基づく幅計算（簡易的に文字幅を推定）
+      const subText = code2LineName(stationCodeInfo.get(stationName) || "") +" "+ stationTimesInfo.get(stationName) || "";
+      const textLength = station.name?.includes("駅") ? Math.max(stationName.length,subText.length) - 3 : stationName.length;
+      const textWidth = textLength * fontSize * 1.0; // 文字数に基づく幅計算（簡易的に文字幅を推定）
       const rectWidth = textWidth + padding * 2; // 背景矩形の幅（文字の幅 + パディング）
 
-      const url = !stationTimesInfo.has(stationName) ? no_time_url(stationName) : time_url(stationName,stationTimesInfo.get(stationName) || "", stationCodeInfo.get(stationName)||"");
+      const url = !stationTimesInfo.has(stationName) ? no_time_url(stationName) : time_url(stationName,stationTimesInfo.get(stationName) || "", stationCodeInfo.get(stationName)||"",textLength);
       const scaledSize = !stationTimesInfo.has(stationName) ? new google.maps.Size(rectWidth, 60) : new google.maps.Size(rectWidth, 80);
     //   const marker = new google.maps.marker.AdvancedMarkerElement({
     //     map: map,
